@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { createUser } from "@/actions/UserActions"
+import bcrypt from "bcryptjs"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -39,7 +40,8 @@ export function SignUpForm({
     const formData = new FormData()
     formData.append("fullName", data.fullName)
     formData.append("email", data.email)
-    formData.append("password", data.password)
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+    formData.append("password", hashedPassword)
     try {
       const result = await createUser(formData)
       if (!result.success) {

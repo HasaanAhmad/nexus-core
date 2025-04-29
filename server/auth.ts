@@ -1,6 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import { compare } from "bcrypt"
+import { compare } from "bcryptjs"
 import { prisma } from "./prisma"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -8,13 +8,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       // You can specify which fields should be submitted, by adding keys to the `credentials` object.
       // e.g. domain, username, password, 2FA token, etc.
-      credentials: {
-        email: {},
-        password: {},
-      },
-      authorize: async (credentials) => {
 
-
+      authorize: async (credentials, request) => {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -29,13 +24,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password)
+        const isPasswordValid = await compare(credentials.password as string, user.password)
 
         if (!isPasswordValid) {
           return null
         }
 
-        return user
+        return {
+          ...user,
+          id: user.id.toString()
+        }
       },
     }),
   ],
