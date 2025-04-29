@@ -58,6 +58,7 @@ model User {
   password         String
   userType         UserType               @default(EMPLOYEE)
   roles            Role[]
+  onboardingCompleted Boolean           @default(false)
   fullName         String
   formData         Json?
   organizationId   Int?                   @unique

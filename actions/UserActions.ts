@@ -1,5 +1,6 @@
 'use server'
 import { prisma } from "@/server/prisma"
+import bcrypt from "bcryptjs"
 
 const createUser = async (formData: FormData) => {
 
@@ -16,12 +17,17 @@ const createUser = async (formData: FormData) => {
             }
         }
 
+        const password = formData.get('password') as string
+        const hashedPassword = await bcrypt.hash(password, 10)
+        console.log('Creating user with hash:', hashedPassword); // Debug line
+
         const data = await prisma.user.create({
             data: {
                 fullName: formData.get('fullName') as string,
                 email: formData.get('email') as string,
-                password: formData.get('password') as string,
+                password: hashedPassword,
                 userType: "ADMIN"
+
             }
         })
         return {
@@ -30,6 +36,7 @@ const createUser = async (formData: FormData) => {
         }
 
     } catch (error) {
+        console.error('User creation error:', error); // Debug line
 
         return {
             success: false,

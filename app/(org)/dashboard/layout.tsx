@@ -2,9 +2,18 @@
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Header } from "./Layout/Header"
+import { redirect } from "next/navigation"
+import { auth } from "@/server/auth"
 
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+  if (!session) {
+    redirect("/sign-in")
+  }
+  if (!session.user.onboardingCompleted) {
+    redirect("/onboarding")
+  }
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
