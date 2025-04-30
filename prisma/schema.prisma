@@ -8,12 +8,15 @@ datasource db {
 }
 
 model Organization {
-  id               Int                    @id @default(autoincrement())
+  id               String                    @id @default(uuid())
   name             String
   logo             String?
   description      String?
-  location         String?
+  location         Json?
   servicesAssigned String?
+  slug           String                @unique
+  industry         String
+  teamSize         String
   users            User[]
   projects         Project[]
   channels         CommunicationChannel[]
@@ -34,7 +37,7 @@ model Subscription {
   type               String
   price              Float
   billingInformation String
-  organizationId     Int          @unique
+  organizationId     String       @unique
   organization       Organization @relation(fields: [organizationId], references: [id])
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
@@ -46,14 +49,14 @@ model Chatbot {
   avgResponseTime  Float?
   queriesAddressed Int?
   genAIId          String?
-  organizationId   Int          @unique
+  organizationId   String       @unique
   organization     Organization @relation(fields: [organizationId], references: [id])
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 }
 
 model User {
-  id               Int                    @id @default(autoincrement())
+  id               String                    @id @default(uuid())
   email            String                 @unique
   password         String
   userType         UserType               @default(EMPLOYEE)
@@ -61,7 +64,7 @@ model User {
   onboardingCompleted Boolean           @default(false)
   fullName         String
   formData         Json?
-  organizationId   Int?                   @unique
+  organizationId   String?                @unique
   organization     Organization?          @relation(fields: [organizationId], references: [id])
   assignedTasks    Task[]                 @relation("TaskAssignee")
   assignedChannels CommunicationChannel[] @relation("ChannelAssignee")
@@ -87,11 +90,11 @@ model Role {
 model Project {
   id             Int          @id @default(autoincrement())
   name           String
-  assigneeId     Int
+  assigneeId     String
   assignee       User         @relation("ProjectAssignee", fields: [assigneeId], references: [id])
   boards         Board[]
   comments       Json?
-  organizationId Int
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -114,7 +117,7 @@ model Task {
   name        String
   description String?
   dueDate     DateTime
-  assigneeId  Int
+  assigneeId  String
   assignee    User     @relation("TaskAssignee", fields: [assigneeId], references: [id])
   boardId     Int
   board       Board    @relation(fields: [boardId], references: [id])
@@ -125,10 +128,10 @@ model Task {
 model CommunicationChannel {
   id             Int          @id @default(autoincrement())
   name           String
-  assigneeId     Int
+  assigneeId     String
   assignee       User         @relation("ChannelAssignee", fields: [assigneeId], references: [id])
   messages       Message[]
-  organizationId Int
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -136,7 +139,7 @@ model CommunicationChannel {
 
 model Message {
   id        Int                  @id @default(autoincrement())
-  userId    Int
+  userId    String
   user      User                 @relation(fields: [userId], references: [id])
   text      String
   channelId Int
@@ -146,12 +149,12 @@ model Message {
 
 model Attendance {
   id             Int          @id @default(autoincrement())
-  userId         Int
+  userId         String
   user           User         @relation(fields: [userId], references: [id])
   employmentType String
   checkIn        DateTime
   checkOut       DateTime?
-  organizationId Int
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -159,13 +162,13 @@ model Attendance {
 
 model Payroll {
   id             Int          @id @default(autoincrement())
-  userId         Int
+  userId         String
   user           User         @relation(fields: [userId], references: [id])
   attendance     Json
   payrollRules   Json
   taxRules       Json
   payslips       Payslip[]
-  organizationId Int
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -173,7 +176,7 @@ model Payroll {
 
 model Payslip {
   id          Int      @id @default(autoincrement())
-  userId      Int
+  userId      String
   user        User     @relation(fields: [userId], references: [id])
   calculation Json
   payrollId   Int
@@ -185,7 +188,7 @@ model Inventory {
   id             Int                 @id @default(autoincrement())
   categories     InventoryCategory[]
   rules          Json
-  organizationId Int
+  organizationId String
   organization   Organization        @relation(fields: [organizationId], references: [id])
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -217,7 +220,7 @@ model WebsiteBuilder {
   template       Json
   userLanding    Json
   published      Boolean      @default(false)
-  organizationId Int
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -227,7 +230,7 @@ model CRM {
   id             Int              @id @default(autoincrement())
   customers      Customer[]
   tickets        CustomerTicket[]
-  organizationId Int
+  organizationId String
   organization   Organization     @relation(fields: [organizationId], references: [id])
   createdAt      DateTime         @default(now())
 }
@@ -245,7 +248,7 @@ model Customer {
 model CustomerTicket {
   id         Int      @id @default(autoincrement())
   query      String
-  assigneeId Int
+  assigneeId String
   assignee   User     @relation("TicketAssignee", fields: [assigneeId], references: [id])
   email      String
   resolved   Boolean  @default(false)
@@ -258,7 +261,7 @@ model HR {
   id             Int             @id @default(autoincrement())
   appraisalForms AppraisalForm[]
   alerts         Json
-  organizationId Int
+  organizationId String
   organization   Organization    @relation(fields: [organizationId], references: [id])
   createdAt      DateTime        @default(now())
 }

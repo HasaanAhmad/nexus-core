@@ -1,6 +1,7 @@
 'use server'
 import { prisma } from "@/server/prisma"
 import bcrypt from "bcryptjs"
+import { auth, signIn } from "@/server/auth"
 
 const createUser = async (formData: FormData) => {
 
@@ -30,6 +31,7 @@ const createUser = async (formData: FormData) => {
 
             }
         })
+
         return {
             success: true,
             message: "User created successfully"
@@ -45,4 +47,39 @@ const createUser = async (formData: FormData) => {
     }
 }
 
-export { createUser }
+const getOnboardingState = async () => {
+    const session = await auth()
+    if (!session?.user?.id) {
+        return {
+            success: false,
+            message: "Not authenticated"
+        }
+    }
+    // Check if the user exists
+    const userId = session.user.id
+    try {
+        const user = await prisma.user.findFirst({
+            where: {
+                id: userId
+            },
+            select: {
+                onboardingCompleted: true,
+            }
+        })
+
+        return {
+            onboardingCompleted: user?.onboardingCompleted
+        }
+    } catch (error) {
+        console.error('Error fetching user:', error)
+        return {
+            success: false,
+            message: "Failed to fetch user"
+        }
+    }
+}
+
+  
+       
+
+export { createUser, getOnboardingState }

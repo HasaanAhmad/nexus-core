@@ -57,19 +57,18 @@ function SignInForm({
     const password = formData.get("password") as string
 
     try {
-      const result = await signIn("credentials", {
+      const result = (await signIn("credentials", {
         email,
         password,
-        redirect: false,
-      })
+        redirectTo: "/dashboard",
+      })) as unknown as { error?: string }
 
-      if (result?.error) {
+      if (result.error) {
         toast.error("Invalid credentials")
         return
       }
 
       toast.success("Signed in successfully")
-      window.location.href = "/"
     } catch (error) {
       console.error("Error signing in:", error)
       toast.error("Failed to sign in")

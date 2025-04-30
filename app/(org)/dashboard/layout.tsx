@@ -4,16 +4,20 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Header } from "./Layout/Header"
 import { redirect } from "next/navigation"
 import { auth } from "@/server/auth"
-
+import { getOnboardingState } from "@/actions/UserActions"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session) {
     redirect("/sign-in")
   }
-  if (!session.user.onboardingCompleted) {
+
+
+  const onboardingState = await getOnboardingState()
+  if (!onboardingState?.onboardingCompleted) {
     redirect("/onboarding")
   }
+  // Check if the user is authenticated 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

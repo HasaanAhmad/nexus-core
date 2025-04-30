@@ -11,6 +11,7 @@ import TeamSizeStep from './TeamSizeStep';
 import CompletionStep from './CompletionStep';
 import { toast } from 'sonner';
 import StepIndicator from './StepIndicator';
+import { createOrganization } from '@/actions/OrganizationActions';
 
 const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -80,10 +81,17 @@ const Onboarding = () => {
   const handleComplete = async () => {
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast("Success!", {
-        description: "Your organization has been created.",
+      const response = await createOrganization(organizationData);
+      if (!response.success) {
+        toast.error("Failed to create organization", {
+          description: response.message,
+        });
+        return;
+      }
+      toast.success("Organization created successfully", {
+        description: "Your organization has been created successfully.",
       });
+
     } catch (error) {
       toast.error("Something went wrong. Please try again.", {
         description: "Please try again later.",
