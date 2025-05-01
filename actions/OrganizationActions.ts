@@ -39,7 +39,7 @@ export async function createOrganization(data: CreateOrgFormData) {
         slug: slug,
         users: {
           connect: {
-            id: session.user.id // Now using string UUID directly
+            id: session.user.id
           }
         }
       }
@@ -48,7 +48,7 @@ export async function createOrganization(data: CreateOrgFormData) {
     // Update user's onboardingCompleted and link organization
     await prisma.user.update({
       where: {
-        id: session?.user?.id // Now using string UUID directly
+        id: session?.user?.id
       },
       data: {
         onboardingCompleted: true,
@@ -68,6 +68,57 @@ export async function createOrganization(data: CreateOrgFormData) {
     return {
       success: false,
       message: "Failed to create organization"
+    }
+  }
+}
+
+
+
+export const getLandingPage = async () => {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      message: "Not authenticated"
+    }
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: session.user.id
+      },
+      include: {
+        organization: {
+          select: {
+            landingPage: true,
+            slug: true,
+            landingPageHTML: true
+          }
+        }
+      }
+    })
+
+    if (!user?.organization) {
+      return {
+        success: false,
+        message: "Organization not found"
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        hasLandingPage: user.organization.landingPage,
+        slug: user.organization.slug,
+        landingPageHTML: user.organization.landingPageHTML
+      }
+    }
+  } catch (error) {
+    console.error('Landing page error:', error)
+    return {
+      success: false,
+      message: "Failed to get landing page data"
     }
   }
 }

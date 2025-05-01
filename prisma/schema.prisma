@@ -8,14 +8,16 @@ datasource db {
 }
 
 model Organization {
-  id               String                    @id @default(uuid())
+  id               String                 @id @default(uuid())
   name             String
   logo             String?
   description      String?
   location         Json?
   servicesAssigned String?
-  slug           String                @unique
+  slug             String                 @unique
   industry         String
+  landingPage      Boolean                @default(false)
+  landingPageHTML  String?
   teamSize         String
   users            User[]
   projects         Project[]
@@ -57,26 +59,26 @@ model Chatbot {
 }
 
 model User {
-  id               String                    @id @default(uuid())
-  email            String                 @unique
-  password         String
-  userType         UserType               @default(EMPLOYEE)
-  roles            Role[]
-  onboardingCompleted Boolean           @default(false)
-  fullName         String
-  formData         Json?
-  organizationId   String?                @unique
-  organization     Organization?          @relation(fields: [organizationId], references: [id])
-  assignedTasks    Task[]                 @relation("TaskAssignee")
-  assignedChannels CommunicationChannel[] @relation("ChannelAssignee")
-  assignedTickets  CustomerTicket[]       @relation("TicketAssignee")
-  assignedProjects Project[]              @relation("ProjectAssignee")
-  messages         Message[]
-  attendances      Attendance[]
-  payrolls         Payroll[]
-  payslips         Payslip[]
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  id                  String                 @id @default(uuid())
+  email               String                 @unique
+  password            String
+  userType            UserType               @default(EMPLOYEE)
+  roles               Role[]
+  onboardingCompleted Boolean                @default(false)
+  fullName            String
+  formData            Json?
+  organizationId      String?                @unique
+  organization        Organization?          @relation(fields: [organizationId], references: [id])
+  assignedTasks       Task[]                 @relation("TaskAssignee")
+  assignedChannels    CommunicationChannel[] @relation("ChannelAssignee")
+  assignedTickets     CustomerTicket[]       @relation("TicketAssignee")
+  assignedProjects    Project[]              @relation("ProjectAssignee")
+  messages            Message[]
+  attendances         Attendance[]
+  payrolls            Payroll[]
+  payslips            Payslip[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 }
 
 model Role {
@@ -276,11 +278,12 @@ model AppraisalForm {
   hr        HR       @relation(fields: [hrId], references: [id])
   createdAt DateTime @default(now())
 }
+
 model JsonForms {
-  id        Int    @id @default(autoincrement())
-  jsonform  String
-  createdBy String
-  createdAt String
+  id           Int            @id @default(autoincrement())
+  jsonform     String
+  createdBy    String
+  createdAt    String
   Organization Organization[]
 }
 
