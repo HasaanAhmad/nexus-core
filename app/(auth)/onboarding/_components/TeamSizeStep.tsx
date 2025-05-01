@@ -27,11 +27,6 @@ const TeamSizeStep = ({ data, updateData }: TeamSizeStepProps) => {
       exit={{ opacity: 0 }}
       className="space-y-6"
     >
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">How big is your team?</h2>
-        <p className="text-gray-500">Select the number of employees in your organization</p>
-      </div>
-
       <RadioGroup
         value={data.teamSize}
         onValueChange={(value) => updateData({ teamSize: value })}

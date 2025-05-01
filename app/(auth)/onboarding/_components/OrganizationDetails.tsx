@@ -20,11 +20,6 @@ const OrganizationDetails = ({ data, updateData }: OrganizationDetailsProps) => 
       exit={{ opacity: 0 }}
       className="space-y-6"
     >
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Tell us about your organization</h2>
-        <p className="text-gray-500">Enter the basic details about your organization</p>
-      </div>
-
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="org-name">Organization Name</Label>

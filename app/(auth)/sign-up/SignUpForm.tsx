@@ -10,6 +10,8 @@ import * as z from "zod"
 import { createUser } from "@/actions/UserActions"
 import { toast } from "sonner"
 import Link from "next/link"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -27,6 +29,8 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const router = useRouter();
+  
   const {
     register,
     handleSubmit,
@@ -40,16 +44,37 @@ export function SignUpForm({
     formData.append("fullName", data.fullName)
     formData.append("email", data.email)
     formData.append("password", data.password)
+    
     try {
+      // 1. Create user account
       const result = await createUser(formData)
+      
       if (!result.success) {
         toast.error(result.message)
         return
       }
-      toast.success(result.message)
+      
+      // 2. If user creation was successful, sign them in automatically
+      const signInResult = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false, // Don't redirect automatically, we'll handle it
+      })
+      
+      if (signInResult?.error) {
+        // If sign-in fails for some reason
+        toast.error("Account created but couldn't sign in automatically. Please log in.")
+        router.push("/sign-in") // Redirect to login page instead
+        return
+      }
+      
+      // 3. Show success message and redirect to dashboard
+      toast.success("Account created successfully!")
+      router.push("/dashboard")
+      
     } catch (error) {
-      console.error("Error creating user:", error)
-      toast.error("Failed to create user")
+      console.error("Error during signup process:", error)
+      toast.error("Failed to create account")
     }
   }
 

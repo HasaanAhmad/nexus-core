@@ -9,6 +9,7 @@ declare module "next-auth" {
             fullName: string
             userType: "ADMIN" | "USER"
             onboardingCompleted: boolean
+            organizationId: string | null
         }
     }
 
@@ -19,5 +20,6 @@ declare module "next-auth" {
         fullName: string
         userType: "ADMIN" | "USER"
         onboardingCompleted: boolean
+        organizationId: string | null
     }
 }

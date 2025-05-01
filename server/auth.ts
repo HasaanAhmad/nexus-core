@@ -37,7 +37,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.fullName,
           fullName: user.fullName,
           onboardingCompleted: user.onboardingCompleted,
-          userType: user.userType === "EMPLOYEE" ? "USER" : user.userType
+          userType: user.userType === "EMPLOYEE" ? "USER" : user.userType,
+          organizationId: user.organizationId ? user.organizationId.toString() : null,
         }
       },
     }),
@@ -51,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.fullName = token.fullName as string
         session.user.userType = token.userType as "ADMIN" | "USER"
         session.user.onboardingCompleted = token.onboardingCompleted as boolean
+        session.user.organizationId = token.organizationId as string
       }
       return session
     },
@@ -62,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.fullName = user.fullName
         token.userType = user.userType
         token.onboardingCompleted = user.onboardingCompleted
+        token.organizationId = user.organizationId
       }
       return token
     }

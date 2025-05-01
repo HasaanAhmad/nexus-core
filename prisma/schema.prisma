@@ -28,6 +28,7 @@ model Organization {
   hr               HR[]
   websiteBuilders  WebsiteBuilder[]
   subscription     Subscription?
+  jsonforms        JsonForms[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 }
@@ -274,6 +275,13 @@ model AppraisalForm {
   hrId      Int
   hr        HR       @relation(fields: [hrId], references: [id])
   createdAt DateTime @default(now())
+}
+model JsonForms {
+  id        Int    @id @default(autoincrement())
+  jsonform  String
+  createdBy String
+  createdAt String
+  Organization Organization[]
 }
 
 enum UserType {
