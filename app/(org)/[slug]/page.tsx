@@ -3,37 +3,35 @@ import { getLandingPage } from '@/actions/OrganizationActions'
 import { redirect } from 'next/navigation'
 import { getOnboardingState } from '@/actions/UserActions'
 import { auth } from '@/server/auth'
-const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
-  const result = await getLandingPage()
-  const onboardingState = await getOnboardingState()
-  console.log('onboardingState', onboardingState);
 
+const Page = async ({ params }: { params: { slug: string } }) => {
   const session = await auth()
   if (!session?.user?.id) {
     return redirect('/sign-in')
   }
 
+  const [result, onboardingState] = await Promise.all([
+    getLandingPage(),
+    getOnboardingState()
+  ])
+
+  // Check onboarding first
   if (!onboardingState?.onboardingCompleted) {
     return redirect('/onboarding')
   }
 
-  if (result?.data?.slug !== (await params).slug) {
-    redirect(`/`)
-  }
-  if (result?.data?.slug) {
-    redirect(`/${(await params).slug}/dashboard`)
+  // Validate organization slug
+  if (!result?.success || !result.data?.slug) {
+    return redirect('/')
   }
 
+  // Check if the URL slug matches the user's organization slug
+  if (result.data.slug !== params.slug) {
+    return redirect('/')
+  }
 
-
-
-
-
-  return (
-    <div>
-
-    </div>
-  )
+  // If everything is valid, redirect to dashboard
+  return redirect(`/${params.slug}/dashboard`)
 }
 
-export default page
+export default Page

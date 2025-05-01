@@ -27,6 +27,7 @@ import {
   Home
 } from 'lucide-react';
 
+import { useParams } from 'next/navigation'
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -143,18 +144,30 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  const navMainWithActiveState = data.navMain.map(item => ({
+  const params = useParams()
+  const slug = params?.slug as string
+
+  // Update navMain URLs with organization slug
+  const navMainWithSlug = data.navMain.map(item => ({
     ...item,
-    isActive: pathname === item.url
+    url: `/${slug}${item.url}`,
+    isActive: pathname === `/${slug}${item.url}`
   }))
+
+  // Update projects URLs with organization slug
+  const projectsWithSlug = data.projects.map(project => ({
+    ...project,
+    url: `/${slug}${project.url}`
+  }))
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMainWithActiveState} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMainWithSlug} />
+        <NavProjects projects={projectsWithSlug} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

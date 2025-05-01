@@ -11,20 +11,16 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { AiModel } from '@/AiModel'
 import { saveData } from '../actions/createForm'
-import { useRouter } from 'next/navigation'
-
+import { useRouter, useParams } from 'next/navigation'
 
 const CreateForm = (session: { user: any }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [userInput, setUserInput] = useState('')
     const [loading, setLoading] = useState(false)
+    const router = useRouter()
+    const params = useParams()
+    const slug = params?.slug as string
     const user = session?.user?.user || null
-    
-    // Updated PROMPT for better consistency
-   
-
-    const router = useRouter(); // Initialize the router
-
 
     const onCreateClick = async () => {
         setLoading(true);
@@ -34,10 +30,11 @@ const CreateForm = (session: { user: any }) => {
             if (!savedForm) {
                 throw new Error('Failed to save form data');
             }
-            const formId = savedForm.id; // Get the ID of the newly created form
-            const formUrl = `/dashboard/users/edit-form/${formId}`; // Construct the URL for the new form
+            const formId = savedForm.id;
+            const formUrl = `/users/edit-form/${formId}`;
+            
             if(formId){
-                router.push(formUrl); // Redirect to the new form page
+                router.push(formUrl);
             }
 
             setIsOpen(false);
@@ -47,7 +44,6 @@ const CreateForm = (session: { user: any }) => {
             setLoading(false);
         }
     }
-
 
     return (
         <div>
