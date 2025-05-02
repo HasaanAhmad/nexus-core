@@ -2,25 +2,31 @@ import React from 'react'
 import { getLandingPage } from '@/actions/OrganizationActions'
 import { redirect } from 'next/navigation'
 import { auth } from '@/server/auth'
-
+import { getOnboardingState } from '@/actions/UserActions'
 const page = async () => {
-    const session = await auth()
-    if (!session?.user?.id) {
-        return redirect('/sign-in')
-    }
+  const session = await auth()
+  const onboarding = await getOnboardingState()
+  if (!session?.user?.id) {
+    return redirect('/sign-in')
+  }
 
-    const result = await getLandingPage()
-    const slug = result?.data?.slug
-    if (!slug) {
-        return redirect('/')
-    }
-    if (slug) {
-        redirect(`/${slug}/dashboard`)
-    }
+  if (!onboarding?.onboardingCompleted) {
+    return redirect('/onboarding')
+  }
 
-  return (  
+
+
+  const result = await getLandingPage()
+  const slug = result?.data?.slug
+
+
+  if (slug) {
+    return redirect(`/${slug}/dashboard`)
+  }
+
+  return (
     <div>Redirecting to Dashboard</div>
-  ) 
+  )
 }
 
 export default page 
