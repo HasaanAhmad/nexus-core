@@ -19,7 +19,7 @@ const CreateForm = (session: { user: any }) => {
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const params = useParams()
-    const slug = params?.slug as string
+    const { slug } = params as { slug: string }    
     const user = session?.user?.user || null
 
     const onCreateClick = async () => {
@@ -31,7 +31,7 @@ const CreateForm = (session: { user: any }) => {
                 throw new Error('Failed to save form data');
             }
             const formId = savedForm.id;
-            const formUrl = `/users/edit-form/${formId}`;
+            const formUrl = `/${slug}/dashboard/users/edit-form/${formId}`;
             
             if(formId){
                 router.push(formUrl);

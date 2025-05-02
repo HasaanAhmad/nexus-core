@@ -4,12 +4,15 @@ import { getAllForms } from '../actions/getAllForms';
 import { useRouter } from 'next/navigation';
 import { deleteForm } from '../actions/deleteForm';
 import { toast, Toaster } from 'sonner';
+import { useParams } from 'next/navigation';
 
 const AllForms = (session: { user: any }) => {
     const userId = session?.user?.user?.email;
     const isLoaded = session?.user !== undefined;
     const [forms, setForms] = React.useState<{ id: number; jsonform: string; createdBy: string; createdAt: string; }[]>([]);
     const [loading, setLoading] = React.useState<boolean>(true);
+    const params = useParams()
+    const { slug } = params as { slug: string }    
     const router = useRouter();
     
     const getForms = async () => {
@@ -34,7 +37,7 @@ const AllForms = (session: { user: any }) => {
     }, [isLoaded, userId]);
 
     const handleEdit = (id: number) => {
-        router.push(`/dashboard/users/edit-form/${id}`);
+        router.push(`/${slug}/dashboard/users/edit-form/${id}`);
     };
 
     const handleDelete = (id: number) => {

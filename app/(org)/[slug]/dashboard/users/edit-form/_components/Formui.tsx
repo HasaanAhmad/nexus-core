@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getForm } from '../../actions/getForm';
 import { ArrowLeft, PlusIcon, Share2, SquareArrowOutUpRight } from 'lucide-react';
@@ -23,10 +23,14 @@ const Formui = () => {
   const router = useRouter();
   const params = useParams();
   const formId = params.formId;
-  const { data: session } = useSession(); // Use NextAuth's useSession hook to get user session data
-  const user = session?.user || null; // Extract user data from the session
-  const isLoaded = session?.user !== undefined; // Check if user data is loaded
-  const isSignedIn = session?.user !== null; // Check if the user is signed in
+  const { data: session, status } = useSession();
+  const user = session?.user || null;
+  const isLoaded = status !== 'loading';
+  const isSignedIn = !!user;
+  
+  // Reference to track if data has been fetched
+  const dataFetched = useRef(false);
+  
   const [formData, setFormData] = useState<{
     id: number;
     jsonform: string;
@@ -37,122 +41,143 @@ const Formui = () => {
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [updateTrigger, setUpdateTrigger] = useState<number>(0); // Initialize updateTrigger
+  const [formChanged, setFormChanged] = useState(false);
 
-  const onFieldUpdate = (value: Field, index: number) => {
-    setFormData(prevFormData => {
-      if (prevFormData) {
-        const parsedJsonForm = JSON.parse(prevFormData.jsonform);
-        parsedJsonForm.fields[index] = { ...parsedJsonForm.fields[index], label: value.label, placeholder: value.placeholder };
-
-        // Deep copy to ensure React triggers a re-render
-        const updatedFormData = {
-          ...prevFormData,
-          jsonform: JSON.stringify(parsedJsonForm)
-        };
-
-        setUpdateTrigger(Date.now());
-        toast('Field Updated Successfully') // Update updateTrigger with a new timestamp
-        return updatedFormData;
-      }
-      return prevFormData;
-    });
-  };
-  const handleReorderFields = (updatedFields: Field[]) => {
-    setFormData((prevFormData) => {
-      if (prevFormData) {
-        const parsedJsonForm = JSON.parse(prevFormData.jsonform);
-        parsedJsonForm.fields = updatedFields; // Update the field order
-
-        // Create the updated form data with the reordered fields
-        const updatedFormData = {
-          ...prevFormData,
-          jsonform: JSON.stringify(parsedJsonForm),
-        };
-
-        // Set the updated form data
-        setUpdateTrigger(Date.now()); // Update updateTrigger with a new timestamp
-        return updatedFormData;
-      }
-      return prevFormData;
-    });
-  };
-  const deleteField = (index: number) => {
-    setFormData(prevFormData => {
-      if (prevFormData) {
-        const parsedJsonForm = JSON.parse(prevFormData.jsonform);
-        parsedJsonForm.fields.splice(index, 1);
-
-        // Deep copy to ensure React triggers a re-render
-        const updatedFormData = {
-          ...prevFormData,
-          jsonform: JSON.stringify(parsedJsonForm)
-        };
-
-        setUpdateTrigger(Date.now());
-        toast("Field Deleted Successfully") // Update updateTrigger with a new timestamp
-        return updatedFormData;
-      }
-      return prevFormData;
-    });
-  }
-  const addField = (newField: Field) => {
-    setFormData((prevFormData) => {
-      if (prevFormData) {
-        const parsedJsonForm = JSON.parse(prevFormData.jsonform);
-        parsedJsonForm.fields.push(newField);
-
-        // Create the updated form data with the new field
-        const updatedFormData = {
-          ...prevFormData,
-          jsonform: JSON.stringify(parsedJsonForm),
-        };
-
-        // Set the updated form data
-        setUpdateTrigger(Date.now()); // Update updateTrigger with a new timestamp
-        toast("Field Added Successfully"); // Show a toast message
-        return updatedFormData;
-      }
-      return prevFormData;
-    });
-  };
-
-
+  // Fetch form data only once when user and formId are available
   useEffect(() => {
-    // Wait until user data is loaded and formId is available
-    if (!isLoaded || !formId || !user) return; 
-  
+    if (!isLoaded || !formId || dataFetched.current) return;
+    
     const fetchData = async () => {
       try {
-        setLoading(true);  // Make sure loading is set to true before fetching
+        setLoading(true);
         const form = await getForm(Number(formId));
   
         if (!form) {
           setError('No form found');
-        } else if (form.createdBy !== user?.email) {
+        } else if (user && form.createdBy !== user.email) {
           setUnauthorized(true);
         } else {
           setFormData(form);
         }
+        
+        // Mark that we've fetched the data
+        dataFetched.current = true;
       } catch (err) {
         setError('Error fetching form data.');
         console.error('Error fetching form:', err);
       } finally {
-        setLoading(false);  // Ensure loading is set to false after fetching
+        setLoading(false);
       }
     };
   
-    fetchData();
-  }, [user]);  // Re-run when these dependencies change
-  
-
-  // Add this useEffect for updating the UI when updateTrigger changes
-  useEffect(() => {
-    if (updateTrigger) {
-      updateForm(Number(formId), formData?.jsonform || '');
-      // Additional logic if needed when form is updated
+    if (isSignedIn) {
+      fetchData();
     }
-  }, [updateTrigger]); // Depend on updateTrigger to update UI components
+  }, [formId, isLoaded, isSignedIn, user]);
+
+  // Memoized form update function with debouncing logic
+  const saveFormChanges = useCallback(async () => {
+    if (formData && formId && formChanged) {
+      try {
+        await updateForm(Number(formId), formData.jsonform);
+        setFormChanged(false);
+        toast.success('Changes saved');
+      } catch (err) {
+        console.error('Error updating form:', err);
+        toast.error('Failed to save changes');
+      }
+    }
+  }, [formData, formId, formChanged]);
+
+  // Debounce form changes before saving
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (formChanged) {
+      timer = setTimeout(() => {
+        saveFormChanges();
+      }, 1000); // Increased debounce time
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [formChanged, saveFormChanges]);
+
+  // Field update handler
+  const onFieldUpdate = (value: Field, index: number) => {
+    setFormData(prevFormData => {
+      if (!prevFormData) return null;
+      
+      const parsedJsonForm = JSON.parse(prevFormData.jsonform);
+      parsedJsonForm.fields[index] = { 
+        ...parsedJsonForm.fields[index], 
+        label: value.label, 
+        placeholder: value.placeholder 
+      };
+
+      return {
+        ...prevFormData,
+        jsonform: JSON.stringify(parsedJsonForm)
+      };
+    });
+    
+    setFormChanged(true);
+    toast('Field Updated Successfully');
+  };
+
+  // Field reordering handler
+  const handleReorderFields = (updatedFields: Field[]) => {
+    setFormData((prevFormData) => {
+      if (!prevFormData) return null;
+      
+      const parsedJsonForm = JSON.parse(prevFormData.jsonform);
+      parsedJsonForm.fields = updatedFields;
+
+      return {
+        ...prevFormData,
+        jsonform: JSON.stringify(parsedJsonForm),
+      };
+    });
+    
+    setFormChanged(true);
+  };
+
+  // Field deletion handler
+  const deleteField = (index: number) => {
+    setFormData(prevFormData => {
+      if (!prevFormData) return null;
+      
+      const parsedJsonForm = JSON.parse(prevFormData.jsonform);
+      parsedJsonForm.fields.splice(index, 1);
+
+      return {
+        ...prevFormData,
+        jsonform: JSON.stringify(parsedJsonForm)
+      };
+    });
+    
+    setFormChanged(true);
+    toast("Field Deleted Successfully");
+  };
+
+  // Add field handler
+  const addField = (newField: Field) => {
+    setFormData((prevFormData) => {
+      if (!prevFormData) return null;
+      
+      const parsedJsonForm = JSON.parse(prevFormData.jsonform);
+      parsedJsonForm.fields.push(newField);
+
+      return {
+        ...prevFormData,
+        jsonform: JSON.stringify(parsedJsonForm),
+      };
+    });
+    
+    setFormChanged(true);
+    toast("Field Added Successfully");
+  };
 
   // Loading state until the user is fully loaded
   if (!isLoaded || loading) {
@@ -205,7 +230,6 @@ const Formui = () => {
       <div className="p-4">
         {/* Back Button */}
         <div className='flex justify-between items-center gap-1'>
-
           <h2
             className="flex gap-2 items-center my-5 cursor-pointer hover:font-bold"
             onClick={() => router.back()}
@@ -214,34 +238,37 @@ const Formui = () => {
           </h2>
           <div className='flex gap-2'>
             <Link href={`/aiform/${formId}`} passHref target='_blank'>
-            <Button className='gap-2 '> <SquareArrowOutUpRight className='w-5 h-5'/> Live Preview</Button>
+              <Button className='gap-2'> 
+                <SquareArrowOutUpRight className='w-5 h-5'/> Live Preview
+              </Button>
             </Link>
-            <Button className='gap-2 bg-blue-500 hover:bg-blue-400'> <Share2 className='w-5 h-5'/> Share</Button>
+            <Button className='gap-2 bg-blue-500 hover:bg-blue-400'> 
+              <Share2 className='w-5 h-5'/> Share
+            </Button>
           </div>
-
         </div>
+        
         {/* Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
           
           {/* FieldController Container */}
           <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg shadow-lg flex flex-col items-center justify-center space-y-6 border border-blue-200 hover:shadow-2xl transition-shadow duration-300 transform hover:-translate-y-1 hover:scale-105">
-      
-      {/* Header Section */}
-      <h3 className="text-2xl font-semibold text-blue-600 flex items-center gap-2">
-        <PlusIcon className="h-6 w-6 text-blue-500 animate-bounce" aria-hidden="true" />
-        Add New Field
-      </h3>
-      
-      {/* FieldController Component */}
-      <div className="w-full">
-        <FieldController addField={addField} />
-      </div>
-      
-      {/* Optional: Help Text or Tooltip */}
-      <p className="text-sm text-blue-500 text-center">
-        Drag and drop fields from the library or create custom ones.
-      </p>
-    </div>
+            {/* Header Section */}
+            <h3 className="text-2xl font-semibold text-blue-600 flex items-center gap-2">
+              <PlusIcon className="h-6 w-6 text-blue-500 animate-bounce" aria-hidden="true" />
+              Add New Field
+            </h3>
+            
+            {/* FieldController Component */}
+            <div className="w-full">
+              <FieldController addField={addField} />
+            </div>
+            
+            {/* Optional: Help Text or Tooltip */}
+            <p className="text-sm text-blue-500 text-center">
+              Drag and drop fields from the library or create custom ones.
+            </p>
+          </div>
           
           {/* Formfields Container */}
           <div className="md:col-span-2 border rounded-lg p-4 flex items-center justify-center">
@@ -252,12 +279,10 @@ const Formui = () => {
               onReorderFields={handleReorderFields}
             />
           </div>
-          
         </div>
       </div>
     </div>
   );
-  
 };
 
 export default Formui;
