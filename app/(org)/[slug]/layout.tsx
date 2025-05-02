@@ -10,7 +10,7 @@ const Layout = async ({
   params: { slug: string }
 }) => {
   const session = await auth()
-  
+  const { slug } = await params
   if (!session?.user?.id) {
     redirect('/sign-in')
   }
@@ -18,7 +18,7 @@ const Layout = async ({
   // Validate organization slug
   const organization = await prisma.organization.findFirst({
     where: {
-      slug: params.slug,
+      slug: slug,
       users: {
         some: {
           id: session.user.id
@@ -31,7 +31,7 @@ const Layout = async ({
     redirect('/')
   }
 
-  return <div>{children}</div>
+  return <div suppressHydrationWarning>{children}</div>
 }
 
 export default Layout

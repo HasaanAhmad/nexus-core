@@ -37,6 +37,7 @@ import {
   Briefcase, 
   Calendar 
 } from "lucide-react";
+import { useEffect, useState } from 'react'
 
 const revenueData = [
   { name: 'Jan', value: 1200 },
@@ -64,6 +65,8 @@ const projectData = [
 const COLORS = ['#7938e8', '#9452eb', '#ac79f2', '#c6a8f8'];
 
 export default function Page() {
+  const [currentTime] = useState(Date.now())
+
   return (
   
     <div className="space-y-6 w-max-4 mx-auto">
@@ -244,7 +247,7 @@ export default function Page() {
                         : "Inventory updated"}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {new Date(Date.now() - i * 3600000).toLocaleString()}
+                      {new Date(currentTime - i * 3600000).toLocaleString()}
                     </div>
                   </div>
                 </div>
