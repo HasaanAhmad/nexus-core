@@ -3,7 +3,7 @@ import { prisma } from '@/server/prisma';
 import moment from 'moment';
 import { auth } from '@/server/auth';
 import { AiModel } from '@/AiModel';
-import { PROMPT } from '@/Prompts/RegistrationPrompt';
+import { PROMPT } from '@/prompts/RegistrationPrompt';
 
 export const saveData = async (createdByUser: string, userInput:string) => {
   const session = await auth();
