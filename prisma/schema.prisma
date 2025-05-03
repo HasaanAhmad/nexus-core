@@ -284,10 +284,37 @@ model JsonForms {
   jsonform     String
   createdBy    String
   createdAt    String
-  organizationId String       @unique 
+  organizationId String       
   organization   Organization @relation(fields: [organizationId], references: [id])
+  responses   FormResponses[] // Relation to responses
+  invitations FormInvitation[] // Relation to invitations
 }
-
+model FormResponses {
+  id        Int      @id @default(autoincrement())
+  formId    Int      // Foreign key to the form
+  form      JsonForms     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  response  String   // The form response data stored as JSON
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Optional: Include this if you want to track who submitted the response
+  submittedBy String? // Email or ID of the person who submitted the form
+  
+  @@index([formId]) // Add an index for faster querying by form
+}
+model FormInvitation {
+  id        Int      @id @default(autoincrement())
+  formId    Int      
+  form      JsonForms     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  email     String   // Email of the person invited
+  sentAt    DateTime @default(now())
+  hasResponded Boolean @default(false)
+  respondedAt  DateTime?
+  
+  @@index([formId])
+  @@index([email])
+  @@unique([formId, email]) // Ensure no duplicate invitations
+}
 enum UserType {
   ADMIN
   EMPLOYEE

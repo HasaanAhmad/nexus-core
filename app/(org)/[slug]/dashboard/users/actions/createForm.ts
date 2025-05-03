@@ -9,6 +9,8 @@ import { getOrganization } from '@/actions/OrganizationActions';
 export const saveData = async (createdByUser: string, userInput:string) => {
   const session = await auth();
   const organization = await getOrganization();
+  console.log('Organization:', organization);
+  
   
   try {
     // Save data to the database

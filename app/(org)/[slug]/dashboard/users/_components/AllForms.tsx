@@ -71,7 +71,7 @@ const AllForms = (session: { user: any }) => {
 
     return (
         <div>
-            <Toaster position="top-right" />
+            <Toaster position="bottom-right" />
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <div className="loader border-t-4 border-blue-500 rounded-full w-12 h-12 animate-spin"></div>
@@ -137,7 +137,8 @@ const AllForms = (session: { user: any }) => {
                 <ShareModal 
                     isOpen={isShareModalOpen} 
                     onClose={closeShareModal}
-                    formUrl={`https://localhost:3000/aiform/${currentFormId}`}
+                    formUrl={`http://localhost:3000/aiform/${currentFormId}`}
+                    formId={currentFormId}
                 />
             )}
         </div>

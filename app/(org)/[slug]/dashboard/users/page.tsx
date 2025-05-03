@@ -10,7 +10,7 @@ import { auth } from "@/server/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
+import Responses from './_components/Responses';
 // Mock user data
 const mockUsers = [
   {
@@ -75,6 +75,7 @@ const page = async () => {
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="roles">Roles and Permission</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
+          <TabsTrigger value="responses">Responses</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="space-y-4">
           <Card>
@@ -194,6 +195,21 @@ const page = async () => {
                 <div className='mt-10'>
                   <AllForms user={session}/>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="responses">
+          <Card>
+            <CardHeader>
+              <CardTitle>Form Responses</CardTitle>
+              <CardDescription>View and manage form responses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-10">
+                <h3 className="text-lg font-medium mb-2">Form responses content</h3>
+                <Responses user={session?.user}/>
               </div>
             </CardContent>
           </Card>

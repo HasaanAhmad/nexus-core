@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import FieldRenderer from '../../(org)/[slug]/dashboard/users/edit-form/_components/Fieldrenderer';
+import { saveResponse } from '@/app/(org)/[slug]/dashboard/users/actions/getResponse';
 interface Field {
     label: string;
     type: string;
@@ -12,13 +13,15 @@ interface Field {
 }
 
 interface FormfieldsProps {
+    formId: number;
     jsonform: string;
 }
 
-const formPreview = ({ jsonform }: FormfieldsProps) => {
+const formPreview = ({ jsonform, formId }: FormfieldsProps) => {
     const formData = jsonform ? JSON.parse(jsonform) : null;
     const formFields: Field[] = useMemo(() => formData?.fields || [], [jsonform]);
     const [formValues, setFormValues] = useState<{ [key: string]: unknown }>({});
+    
 
     const handleChange = (name: string, value: string | string[] | boolean) => {
         setFormValues((prevValues) => ({
@@ -28,8 +31,30 @@ const formPreview = ({ jsonform }: FormfieldsProps) => {
     };
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Form submitted with values:', formValues);
-        // Handle form submission logic here, e.g., send data to an API
+        try {
+            // Ensure formId is a number, parse it if it's a string
+            
+            // Make sure formId is valid
+            if (!formId || isNaN(formId)) {
+                console.error('Invalid form ID');
+                return;
+            }
+            
+            // Server action expects just formId and response
+            saveResponse(formId, {
+                formId,
+                userId: formData?.createdBy,
+                responses: formValues,
+            }).then(() => {
+                console.log('Response saved successfully!');
+                // Consider adding success feedback to the user here
+            }).catch((error) => {
+                console.error('Error saving response:', error);
+                // Consider adding error feedback to the user here
+            });
+        } catch (error) {
+            console.error('Error in form submission:', error);
+        }
     }
 
     return (
@@ -37,24 +62,25 @@ const formPreview = ({ jsonform }: FormfieldsProps) => {
             <h2 className='font-bold text-center text-2xl'>{formData?.title}</h2>
             <h2 className='font-sm text-gray-400 text-center'>{formData?.subheading}</h2>
 
-            {formFields.map((field: Field, index: number) => (
-                <div key={index} className='mb-4'>
-                    <Label className='block text-gray-700 text-sm font-bold mb-2'>{field.label}</Label>
-                    <FieldRenderer
-                        field={field}
-                        value={formValues[field.name] as string | string[] | boolean}
-                        onChange={handleChange}
-                    />
-                </div>
-            ))}
+            <form onSubmit={handleSubmit}>
+                {formFields.map((field: Field, index: number) => (
+                    <div key={index} className='mb-4'>
+                        <Label className='block text-gray-700 text-sm font-bold mb-2'>{field.label}</Label>
+                        <FieldRenderer
+                            field={field}
+                            value={formValues[field.name] as string | string[] | boolean}
+                            onChange={handleChange}
+                        />
+                    </div>
+                ))}
 
-            <Button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                onClick={handleSubmit}
-            >
-                Submit
-            </Button>
+                <Button
+                    type="submit"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                >
+                    Submit
+                </Button>
+            </form>
         </div>
     );
 };

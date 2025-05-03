@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Mail, Copy, Share2 } from "lucide-react"
 import { sendFormInvite } from '../../actions/sendMail'
+import { saveInvitation } from '../../actions/saveInvitation'
 
 type ShareModalProps = {
   isOpen: boolean
@@ -29,6 +30,11 @@ const ShareModal = ({ isOpen, onClose, formUrl, formId }: ShareModalProps) => {
       return;
     }
 
+    if (!formId) {
+      toast.error("Form ID is missing");
+      return;
+    }
+
     try {
       setIsSending(true);
       
@@ -44,7 +50,23 @@ const ShareModal = ({ isOpen, onClose, formUrl, formId }: ShareModalProps) => {
         throw new Error(result.error || 'Failed to send invitation');
       }
       
-      toast.success(`Form link sent to ${email}`);
+      // Only try to save invitation after we know the email was sent successfully
+      let invitationSaved = false;
+      try {
+        await saveInvitation(formId, email);
+        invitationSaved = true;
+      }
+      catch (error) {
+        console.error("Error saving invitation:", error);
+        // Don't show toast here - we'll handle in the final success message
+      }
+      
+      // Show a success message that includes invitation status
+      if (invitationSaved) {
+        toast.success(`Form link sent to ${email}`);
+      } else {
+        toast.success(`Form link sent to ${email}, but there was an issue saving the invitation record`);
+      }
       
       setEmail('');
       setMessage(`I'd like to share this form with you`);

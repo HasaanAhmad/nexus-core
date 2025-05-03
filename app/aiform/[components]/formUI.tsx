@@ -42,13 +42,13 @@ const FORMUI = ({ params }: pageProps) => {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold">Live Preview</h1>
+            <h1 className="text-2xl font-bold">Registration Form</h1>
             {loading ? (
                 <div className="flex justify-center items-center h-64">
                     <div className="loader border-t-4 border-blue-500 rounded-full w-12 h-12 animate-spin"></div>
                 </div>
             ) : (
-                <FormPreview jsonform={formObject?.jsonform || ''} />
+                <FormPreview jsonform={formObject?.jsonform || ''}  formId={Number(formid)}/>
             )}
         </div>
     );
