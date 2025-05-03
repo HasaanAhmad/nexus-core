@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useSession } from "next-auth/react"
+import ShareModal from './shareModal';
 
 interface Field {
   label: string;
@@ -31,6 +32,9 @@ const Formui = () => {
   // Reference to track if data has been fetched
   const dataFetched = useRef(false);
   
+  // Add state for share modal
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  
   const [formData, setFormData] = useState<{
     id: number;
     jsonform: string;
@@ -42,6 +46,7 @@ const Formui = () => {
   const [unauthorized, setUnauthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formChanged, setFormChanged] = useState(false);
+  const formUrl = `https:localhost3000/aiform/${formId}`; // URL to share the form
 
   // Fetch form data only once when user and formId are available
   useEffect(() => {
@@ -179,6 +184,11 @@ const Formui = () => {
     toast("Field Added Successfully");
   };
 
+  // Handle share modal toggle
+  const toggleShareModal = () => {
+    setIsShareModalOpen(prev => !prev);
+  };
+
   // Loading state until the user is fully loaded
   if (!isLoaded || loading) {
     return (
@@ -242,8 +252,11 @@ const Formui = () => {
                 <SquareArrowOutUpRight className='w-5 h-5'/> Live Preview
               </Button>
             </Link>
-            <Button className='gap-2 bg-blue-500 hover:bg-blue-400'> 
-              <Share2 className='w-5 h-5'/> Share
+            <Button 
+              className='gap-2 bg-blue-500 hover:bg-blue-400' 
+              onClick={toggleShareModal}
+            >
+              <Share2 className='w-5 h-5'/> Invite User
             </Button>
           </div>
         </div>
@@ -281,6 +294,13 @@ const Formui = () => {
           </div>
         </div>
       </div>
+      
+      {/* Add ShareModal component */}
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={toggleShareModal}
+        formUrl={formUrl}
+      />
     </div>
   );
 };

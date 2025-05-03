@@ -1,10 +1,12 @@
 'use client'
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getAllForms } from '../actions/getAllForms';
 import { useRouter } from 'next/navigation';
 import { deleteForm } from '../actions/deleteForm';
 import { toast, Toaster } from 'sonner';
 import { useParams } from 'next/navigation';
+import { Share2, Edit, Trash2 } from 'lucide-react';
+import ShareModal from '../edit-form/_components/shareModal';
 
 const AllForms = (session: { user: any }) => {
     const userId = session?.user?.user?.email;
@@ -14,6 +16,10 @@ const AllForms = (session: { user: any }) => {
     const params = useParams()
     const { slug } = params as { slug: string }    
     const router = useRouter();
+    
+    // State for share modal
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [currentFormId, setCurrentFormId] = useState<number | null>(null);
     
     const getForms = async () => {
         try {
@@ -52,6 +58,16 @@ const AllForms = (session: { user: any }) => {
             }
         );
     };
+    
+    const handleShare = (id: number) => {
+        setCurrentFormId(id);
+        setIsShareModalOpen(true);
+    };
+    
+    const closeShareModal = () => {
+        setIsShareModalOpen(false);
+        setCurrentFormId(null);
+    };
 
     return (
         <div>
@@ -69,35 +85,60 @@ const AllForms = (session: { user: any }) => {
                     </div>
                     <h3 className="text-xl font-medium text-gray-900">No forms found</h3>
                     <p className="mt-1 text-sm text-gray-500">You haven't created any forms yet.</p>
-                    
                 </div>
             ) : (
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                     {forms.map((form) => {
                         const formJson = JSON.parse(form.jsonform);
+                        const formUrl = `https://localhost:3000/aiform/${form.id}`;
+                        
                         return (
-                            <div key={form.id} className='border p-4 rounded shadow-md'>
-                                <h2 className='font-bold'>Title: {formJson.title}</h2>
-                                <p>Created By: {form.createdBy}</p>
-                                <p>Created At: {form.createdAt}</p>
-                                <div className="flex justify-between mt-4">
+                            <div key={form.id} className='border p-4 rounded shadow-md hover:shadow-lg transition-shadow'>
+                                <h2 className='font-bold text-lg mb-2'>Title: {formJson.title}</h2>
+                                <p className="text-sm text-gray-600">Created By: {form.createdBy}</p>
+                                <p className="text-sm text-gray-600 mb-4">Created At: {form.createdAt}</p>
+                                
+                                <div className="flex justify-between items-center mt-4">
+                                    {/* Invite User Button (Left) */}
                                     <button
-                                        className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded"
-                                        onClick={() => handleEdit(form.id)}
+                                        className="flex items-center gap-1.5 bg-white shadow-sm hover:shadow hover:text-nexus-500 cursor-pointer text-blue-600 font-medium py-1.5 px-3 rounded-md text-sm transition-all border border-gray-100"
+                                        onClick={() => handleShare(form.id)}
                                     >
-                                        Edit
+                                        <Share2 className="h-4 w-4" />
+                                        <span>Share</span>
                                     </button>
-                                    <button
-                                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded"
-                                        onClick={() => handleDelete(form.id)}
-                                    >
-                                        Delete
-                                    </button>
+                                    
+                                    {/* Edit and Delete Buttons (Right) */}
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="flex items-center gap-1.5 bg-white shadow-sm hover:shadow hover:text-yellow-500 cursor-pointer text-gray-700 font-medium py-1.5 px-3 rounded-md text-sm transition-all border border-gray-100 "
+                                            onClick={() => handleEdit(form.id)}
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            <span>Edit</span>
+                                        </button>
+                                        <button
+                                            className="flex items-center gap-1.5 bg-white shadow-sm hover:shadow hover:text-red-500 cursor-pointer text-gray-700 font-medium py-1.5 px-3 rounded-md text-sm transition-all border border-gray-100"
+                                            onClick={() => handleDelete(form.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
+            )}
+            
+            {/* Share Modal */}
+            {currentFormId && (
+                <ShareModal 
+                    isOpen={isShareModalOpen} 
+                    onClose={closeShareModal}
+                    formUrl={`https://localhost:3000/aiform/${currentFormId}`}
+                />
             )}
         </div>
     );

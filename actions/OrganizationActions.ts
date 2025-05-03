@@ -122,3 +122,70 @@ export const getLandingPage = async () => {
     }
   }
 }
+export const getOrganization = async (organizationId?: string) => {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return {
+      success: false,
+      message: "Not authenticated"
+    };
+  }
+
+  try {
+    // If organizationId is provided, use it directly
+    if (organizationId) {
+      const organization = await prisma.organization.findUnique({
+        where: {
+          id: organizationId
+        },
+        include: {
+          users: true
+        }
+      });
+
+      if (!organization) {
+        return {
+          success: false,
+          message: "Organization not found"
+        };
+      }
+
+      return {
+        success: true,
+        data: organization
+      };
+    }
+    
+    // Otherwise, find the organization by the user's association
+    const user = await prisma.user.findUnique({
+      where: {
+        id: session.user.id
+      },
+      include: {
+        organization: {
+          include: {
+            users: true
+          }
+        }
+      }
+    });
+
+    if (!user?.organization) {
+      return {
+        success: false,
+        message: "Organization not found"
+      };
+    }
+
+    return {
+      success: true,
+      data: user.organization
+    };
+  } catch (error) {
+    console.error('Organization error:', error);
+    return {
+      success: false,
+      message: "Failed to get organization data"
+    };
+  }
+}
