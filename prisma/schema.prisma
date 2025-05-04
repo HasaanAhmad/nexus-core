@@ -296,7 +296,7 @@ model FormResponses {
   response  String   // The form response data stored as JSON
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  status    String @default("PENDING") // Status of the response (e.g., PENDING, APPROVED, REJECTED)
   // Optional: Include this if you want to track who submitted the response
   submittedBy String? // Email or ID of the person who submitted the form
   

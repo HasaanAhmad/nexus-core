@@ -32,3 +32,17 @@ export const getResponse = async (formId: number) => {
         throw new Error('Response fetching failed');
     }
 }
+export const patchResponseStatus = async (responseId: number, status: string) => {
+  try {
+    const updatedResponse = await prisma.formResponses.update({
+      where: { id: responseId },
+      data: { status },
+    });
+
+    console.log('Response status updated successfully:', updatedResponse);
+    return updatedResponse;
+  } catch (error) {
+    console.error('Error updating response status:', error);
+    throw new Error('Response status update failed');
+  }
+}

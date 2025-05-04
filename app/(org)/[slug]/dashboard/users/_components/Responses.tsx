@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from 'react'
 import { getResponse } from '../actions/getResponse'
 import { getAllForms } from '../actions/getAllForms'
+import { createEmployee } from '@/actions/UserActions'
+import { patchResponseStatus } from '../actions/getResponse'
+import { sendAccountDetails } from '../actions/sendMail'
 import {
   Table,
   TableBody,
@@ -43,13 +46,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import bcrypt from 'bcryptjs'
 
 interface Response {
   id: number;
   formId: number;
   response: string;
   createdAt?: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: string;
   reviewedAt?: string;
   reviewedBy?: string;
 }
@@ -475,15 +479,7 @@ const LoadingSkeleton = () => (
   </div>
 )
 
-// Mocked actions for demo purposes - in real implementation, these would call your API
-const updateResponseStatus = async (id: number, status: 'approved' | 'rejected') => {
-  // This would be an API call in a real implementation
-  console.log(`Updating response ${id} to ${status}`)
-  // Return a mock promise to simulate API call
-  return new Promise<void>((resolve) => {
-    setTimeout(() => resolve(), 500)
-  })
-}
+
 
 const Responses = ({ user }: { user: any }) => {
   const [loading, setLoading] = useState(true);
@@ -491,6 +487,65 @@ const Responses = ({ user }: { user: any }) => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  const updateResponseStatus = async (id: number, status: 'approved' | 'rejected') => {
+    try {
+      // First update the status in the database
+      await patchResponseStatus(id, status);
+      
+      // If approved, find the response data and create employee
+      if (status === 'approved') {
+        // Find the response to get the form data
+        const response = formResponses.flatMap(fr => fr.responses).find(r => r.id === id);
+        console.log('Response to be processed:', response); // Debug line
+        
+        if (response) {
+          try {
+            // Parse the form response JSON to get user data
+            const responseData = JSON.parse(response.response);
+            
+            // Create FormData object from response
+            const formData = new FormData();
+            formData.append('fullName', responseData.responses.fullName || '');
+            formData.append('email', responseData.responses.email || '');
+            
+            // Generate a temporary password (or use one from the form if it exists)
+            // In production, you'd want to generate a secure random password
+            const tempPassword = Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+            
+            
+            // Create the employee account
+            const result = await createEmployee(formData, hashedPassword);
+            try{
+              const mail = await sendAccountDetails({
+                email: responseData.responses.email || '',
+                password: tempPassword,
+              });
+              console.log('Mail sent successfully:', mail);
+            }catch (error) {
+              console.error('Error sending email:', error);
+              throw new Error('Failed to send account details email');
+            }
+            
+            if (!result.success) {
+              console.error('Failed to create employee:', result.message);
+              throw new Error(result.message);
+            }
+          } catch (parseError) {
+            console.error('Error parsing response data:', parseError);
+            throw new Error('Could not parse form response data');
+          }
+        }
+      }
+      
+      return true;
+    }
+    catch (error) {
+      console.error('Error updating response status:', error);
+      throw new Error('Failed to update response status');
+    }
+  }
   
   // Function to handle status changes
   const handleStatusChange = async (responseId: number, status: 'approved' | 'rejected') => {
@@ -541,12 +596,11 @@ const Responses = ({ user }: { user: any }) => {
           
           // Add mock status for demo (in real app this would come from API)
           const enhancedResponses = responses.map((resp, idx) => {
-            const status = idx % 5 === 0 ? 'approved' as const : (idx % 7 === 0 ? 'rejected' as const : 'pending' as const);
             return {
               id: resp.id,
               formId: resp.formId,
               response: resp.response,
-              status,
+              status: resp.status || 'pending', // Make sure status is defined
               createdAt: resp.createdAt ? new Date(resp.createdAt).toISOString() : new Date(Date.now() - Math.random() * 10000000000).toISOString(),
             } satisfies Response;
           });
@@ -695,7 +749,7 @@ const Responses = ({ user }: { user: any }) => {
         </Card>
       </div>
 
-      {/* Header with search and filter controls */}
+      {/* Rest of the component remains the same */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold">Form Responses</h2>

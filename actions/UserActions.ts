@@ -79,7 +79,33 @@ const getOnboardingState = async () => {
     }
 }
 
-  
+export const createEmployee = async (formData: FormData, password:string) => {
+    try {
+        const data = await prisma.user.create({
+            data: {
+                fullName: formData.get('fullName') as string,
+                email: formData.get('email') as string,
+                password: password,
+                userType: "EMPLOYEE"
+            }
+        })
+        
+        return {
+            success: true,
+            message: "User created successfully"
+        }
+        
+
+    }
+    catch (error) {
+        console.error('User creation error:', error); // Debug line
+
+        return {
+            success: false,
+            message: "Failed to create user"
+        }
+    }
+}
        
 
 export { createUser, getOnboardingState }
