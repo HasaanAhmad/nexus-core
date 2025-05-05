@@ -1,4 +1,3 @@
-import React from 'react'
 import { getLandingPage } from '@/actions/OrganizationActions'
 import { redirect } from 'next/navigation'
 import { getOnboardingState } from '@/actions/UserActions'

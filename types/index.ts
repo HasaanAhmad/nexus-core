@@ -4,6 +4,7 @@ export interface User {
   fullName: string
   userType: 'ADMIN' | 'EMPLOYEE'
   onboardingCompleted: boolean
+  profilePicture?: string
   organizationId?: string
   createdAt: Date
   updatedAt: Date
@@ -21,6 +22,4 @@ export interface Organization {
   landingPage: boolean
   landingPageHTML?: string
   teamSize: string
-  createdAt: Date
-  updatedAt: Date
 }

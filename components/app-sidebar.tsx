@@ -41,13 +41,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { usePathname } from 'next/navigation'
-// This is sample data.
+import { useUserStore } from '@/store/userStore'
+
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/assests/avatar-1.png",
-  },
   teams: [
     {
       name: "Acme Inc",
@@ -146,6 +142,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const params = useParams()
   const slug = params?.slug as string
+  const { user } = useUserStore()
 
   // Update navMain URLs with organization slug
   const navMainWithSlug = data.navMain.map(item => ({
@@ -163,14 +160,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainWithSlug} />
         <NavProjects projects={projectsWithSlug} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

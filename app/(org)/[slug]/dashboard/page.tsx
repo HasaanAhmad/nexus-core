@@ -1,27 +1,12 @@
 'use client'
-import { AppSidebar } from "@/components/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
@@ -29,15 +14,15 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Users, 
-  Package, 
-  Briefcase, 
-  Calendar 
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  Users,
+  Package,
+  Briefcase,
+  Calendar
 } from "lucide-react";
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const revenueData = [
   { name: 'Jan', value: 1200 },
@@ -66,9 +51,20 @@ const COLORS = ['#7938e8', '#9452eb', '#ac79f2', '#c6a8f8'];
 
 export default function Page() {
   const [currentTime] = useState(Date.now())
+  const [formattedDates, setFormattedDates] = useState<string[]>([])
+  
+ 
+  // Handle date formatting on client-side only to avoid hydration mismatch
+  useEffect(() => {
+    const dates = []
+    for (let i = 0; i < 5; i++) {
+      dates.push(new Date(currentTime - i * 3600000).toLocaleString())
+    }
+    setFormattedDates(dates)
+  }, [currentTime])
 
   return (
-  
+
     <div className="space-y-6 w-max-4 mx-auto">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -91,7 +87,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
@@ -107,7 +103,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
@@ -123,7 +119,7 @@ export default function Page() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Scheduled Events</CardTitle>
@@ -243,11 +239,11 @@ export default function Page() {
                       {i % 3 === 0
                         ? "New user registered"
                         : i % 3 === 1
-                        ? "New project created"
-                        : "Inventory updated"}
+                          ? "New project created"
+                          : "Inventory updated"}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {new Date(currentTime - i * 3600000).toLocaleString()}
+                      {formattedDates[i] || ''}
                     </div>
                   </div>
                 </div>
