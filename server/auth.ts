@@ -6,8 +6,6 @@ import { prisma } from "./prisma"
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
-
-      
       authorize: async (credentials) => {
         if (!credentials?.email || !credentials?.password) {
           return null
@@ -22,9 +20,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
         const isPasswordValid =await  bcrypt.compare(credentials.password as string, user.password)
-        console.log("Hashed password:", user.password)
-        console.log("Provided password:", credentials.password)
-        console.log("Password valid:", isPasswordValid)
 
         
         if (!isPasswordValid) {
