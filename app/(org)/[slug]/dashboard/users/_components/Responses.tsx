@@ -6,6 +6,8 @@ import { getAllForms } from '../actions/getAllForms'
 import { createEmployee } from '@/actions/UserActions'
 import { patchResponseStatus } from '../actions/getResponse'
 import { sendAccountDetails } from '../actions/sendMail'
+import { sendRejectionEmail } from '../actions/sendMail'
+
 import {
   Table,
   TableBody,
@@ -47,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import bcrypt from 'bcryptjs'
+import { toast } from 'sonner'
 
 interface Response {
   id: number;
@@ -490,60 +493,98 @@ const Responses = ({ user }: { user: any }) => {
 
   const updateResponseStatus = async (id: number, status: 'approved' | 'rejected') => {
     try {
-      // First update the status in the database
-      await patchResponseStatus(id, status);
-      
-      // If approved, find the response data and create employee
-      if (status === 'approved') {
-        // Find the response to get the form data
-        const response = formResponses.flatMap(fr => fr.responses).find(r => r.id === id);
-        console.log('Response to be processed:', response); // Debug line
-        
-        if (response) {
-          try {
-            // Parse the form response JSON to get user data
+      // Only process further if the status is 'approved'
+      if (status === 'rejected') {
+        toast.success('Response successfully rejected');
+        try{
+          const response = formResponses.flatMap(fr => fr.responses).find(r => r.id === id);
+          if (response) {
             const responseData = JSON.parse(response.response);
-            
-            // Create FormData object from response
-            const formData = new FormData();
-            formData.append('fullName', responseData.responses.fullName || '');
-            formData.append('email', responseData.responses.email || '');
-            
-            // Generate a temporary password (or use one from the form if it exists)
-            // In production, you'd want to generate a secure random password
-            const tempPassword = Math.random().toString(36).slice(-8);
-            const hashedPassword = await bcrypt.hash(tempPassword, 10);
-            
-            
-            // Create the employee account
-            const result = await createEmployee(formData, hashedPassword);
-            try{
-              const mail = await sendAccountDetails({
-                email: responseData.responses.email || '',
-                password: tempPassword,
-              });
-              console.log('Mail sent successfully:', mail);
-            }catch (error) {
-              console.error('Error sending email:', error);
-              throw new Error('Failed to send account details email');
-            }
-            
-            if (!result.success) {
-              console.error('Failed to create employee:', result.message);
-              throw new Error(result.message);
-            }
-          } catch (parseError) {
-            console.error('Error parsing response data:', parseError);
-            throw new Error('Could not parse form response data');
+            const email = responseData.responses.email || '';
+            await sendRejectionEmail({ email });
+            patchResponseStatus(id, status);
           }
+        }catch (error) {
+          console.error('Error sending rejection email:', error);
+          toast.error('Failed to send rejection email');
         }
+        return true;
       }
       
-      return true;
-    }
-    catch (error) {
+      // Find the response to get the form data
+      const response = formResponses.flatMap(fr => fr.responses).find(r => r.id === id);
+      
+      if (!response) {
+        toast.error('Could not find the response data');
+        throw new Error('Response data not found');
+      }
+      
+      try {
+        // Parse the form response JSON to get user data
+        const responseData = JSON.parse(response.response);
+        const email = responseData.responses.email || '';
+        
+        if (!email) {
+          toast.error('Email address is missing in the form response');
+          throw new Error('Email address is required');
+        }
+        
+        // Create FormData object from response
+        const formData = new FormData();
+        formData.append('fullName', responseData.responses.fullName || '');
+        formData.append('email', email);
+        formData.append('organizationId', user?.organizationId || '');        
+        console.log("organizationId", user?.organizationId);
+        
+        // Generate a temporary password
+        const tempPassword = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        
+        // Create the employee account
+        const result = await createEmployee(formData, hashedPassword);
+        
+        if (!result.success) {
+          // Check if it's an existing email error
+          if (result.message.includes('email already exists')) {
+            toast.error('Account with this email already exists');
+          } else {
+            toast.error(`Failed to create employee: ${result.message}`);
+          }
+          throw new Error(result.message);
+        }
+        
+        // Only send email if account creation was successful
+        try {
+          await sendAccountDetails({
+            email: email,
+            password: tempPassword,
+          });
+          
+          toast.success('Employee account created and login details sent successfully');
+        } catch (emailError) {
+          // Account was created but email failed
+          toast.warning('Account created but failed to send login details email');
+          console.error('Error sending email:', emailError);
+        }
+        await patchResponseStatus(id, status);
+
+        return true;
+      } catch (parseError) {
+        toast.error('Invalid form data format');
+        console.error('Error parsing response data:', parseError);
+        throw new Error('Could not parse form response data');
+      }
+    } catch (error) {
+      // Don't duplicate toast messages for errors already handled
+      if (error instanceof Error && 
+          !error.message.includes('Response data not found') && 
+          !error.message.includes('Email address is required') &&
+          !error.message.includes('Could not parse form response data') &&
+          !error.message.includes('email already exists')) {
+        toast.error(`Operation failed: ${error.message || 'Unknown error'}`);
+      }
       console.error('Error updating response status:', error);
-      throw new Error('Failed to update response status');
+      throw error; // Re-throw to allow calling code to handle it
     }
   }
   

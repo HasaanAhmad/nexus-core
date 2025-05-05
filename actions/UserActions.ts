@@ -79,14 +79,16 @@ const getOnboardingState = async () => {
     }
 }
 
-export const createEmployee = async (formData: FormData, password:string) => {
+const createEmployee = async (formData: FormData, password:string) => {
     try {
         const data = await prisma.user.create({
             data: {
                 fullName: formData.get('fullName') as string,
                 email: formData.get('email') as string,
                 password: password,
-                userType: "EMPLOYEE"
+                userType: "EMPLOYEE",
+                onboardingCompleted: true,
+                organizationId: formData.get('organizationId') as string,
             }
         })
         
@@ -108,4 +110,4 @@ export const createEmployee = async (formData: FormData, password:string) => {
 }
        
 
-export { createUser, getOnboardingState }
+export { createUser, getOnboardingState, createEmployee }
