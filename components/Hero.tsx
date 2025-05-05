@@ -21,25 +21,26 @@ const Hero = () => {
   return (
     <section
       ref={heroRef}
-      className="p-8 pb-16 md:p-10 lg:p-20 font-medium bg-gradient-to-tr from-[#001E80] via-[#e4eaff]  overflow-x-clip md:items-center gap-3"
+      className="p-8 pb-16 md:p-10 lg:p-20 font-medium bg-gradient-to-tr from-[#001E80] via-[#e4eaff] overflow-x-clip md:items-center gap-3"
     >
       <div className="md:flex items-center justify-center gap-16">
         <div className="md:w-[478px]">
           <div className="border-2 w-fit p-0.5 px-1 lg:text-lg rounded-lg border-slate-400/80">
-            Version 2.0 is here
+            AI-Powered ERP Solution
           </div>
           <div className="text-5xl md:text-7xl font-black my-7 bg-gradient-to-b from-black to-[#002499] text-transparent bg-clip-text tracking-tighter">
-            Pathway to productivity
+            One Platform, Unlimited Users
           </div>
           <div className="text-xl lg:text-2xl tracking-tighter opacity-85">
-            Celebrate the joy of accomplishment with an app designed to track
-            your progress, motivate your efforts, and celebrate your successes.
+            Transform your business with our all-in-one ERP solution. 
+            Pay one fixed price for unlimited users, powered by AI to streamline 
+            your workflow and boost productivity.
           </div>
 
           <div className="flex items-center gap-3 mt-6 text-lg">
-            <Button text="Get for free" />
+            <Button text="Start Free Trial" />
             <div className="cursor-pointer hover:underline">
-              Learn more
+              Schedule Demo
               <FaArrowRight className="h-3 w-3 inline ml-2" />
             </div>
           </div>
@@ -49,7 +50,7 @@ const Hero = () => {
           <motion.img
             src={Cylinder.src}
             alt="Cylinder"
-            className=" hidden md:block md:absolute -left-8 -top-8"
+            className="hidden md:block md:absolute -left-8 -top-8"
             style={{
               translateY: translateY,
             }}
@@ -71,7 +72,7 @@ const Hero = () => {
           <motion.img
             src={HalfTorus.src}
             alt="HalfTorus"
-            className=" hidden lg:block md:absolute left-[400px] top-[500px]"
+            className="hidden lg:block md:absolute left-[400px] top-[500px]"
             style={{
               translateY: translateY,
             }}
