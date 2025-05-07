@@ -32,9 +32,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <StoreProvider userData={session.user} organizationData={organization}>
         <div className="min-h-screen flex w-full">
           <AppSidebar className="hidden md:flex" />
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col h-screen">
             <Header />
-            <main className="flex-1 overflow-auto px-4 mx-4">
+            <main className="flex-1 overflow-auto p-4">
               {children}
             </main>
           </div>
