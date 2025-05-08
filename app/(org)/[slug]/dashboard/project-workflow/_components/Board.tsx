@@ -1,11 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { useDrop } from "react-dnd";
-import TaskCard from "./TaskCard";
 import { useState, useRef } from "react";
 import CreateTaskModal from "./CreateTaskModal";
+import { Droppable, Draggable } from "@hello-pangea/dnd";
+import { BoardData } from "../MockData";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +17,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface BoardProps {
-  id: string;
-  title: string;
-  tasks: Task[];
+  board: BoardData;
   onTaskClick: (task: Task) => void;
   onAddTask: (boardId: string, task: Task) => void;
   onDeleteBoard: (boardId: string) => void;
-  onMoveTask: (taskId: string, sourceId: string, destinationId: string, index: number) => void;
+  width: string;
 }
 
 export interface Task {
@@ -37,55 +34,28 @@ export interface Task {
   dueDate?: string;
 }
 
-export interface DragItem {
-  type: string;
-  id: string;
-  boardId: string;
-  index: number;
-}
-
 export default function Board({ 
-  id, 
-  title, 
-  tasks, 
+  board,
   onTaskClick, 
   onAddTask, 
   onDeleteBoard,
-  onMoveTask
+  width
 }: BoardProps) {
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const boardRef = useRef<HTMLDivElement>(null);
-
-  const [{ isOver }, drop] = useDrop({
-    accept: 'TASK',
-    hover(item: DragItem, monitor) {
-      // If the board is empty or the item is being dragged over its own board
-      if (tasks.length === 0 || item.boardId === id) {
-        return;
-      }
-    },
-    drop(item: DragItem) {
-      // If dropping on a different board
-      if (item.boardId !== id) {
-        onMoveTask(item.id, item.boardId, id, tasks.length);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver()
-    })
-  });
-
-  // Apply the drop ref to our ref
-  drop(boardRef);
+  const tasksContainerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Card className={`w-full sm:w-[250px] md:w-[280px] lg:w-[300px] flex-shrink-0 ${isOver ? 'ring-2 ring-primary/50' : ''}`}>
-      <CardHeader className="pb-2 bg-muted/20">
+    <div 
+      className="flex flex-col border rounded-lg bg-background"
+      style={{ width, flexShrink: 0 }}
+    >
+      {/* Board Header - Fixed and Responsive */}
+      <div className="p-3 border-b sticky top-0 bg-background z-10">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-md truncate">{title}</CardTitle>
+          <div className="font-medium truncate">{board.title}</div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{tasks.length}</Badge>
+            <Badge variant="outline">{board.tasks.length}</Badge>
             <Button
               variant="ghost"
               size="icon"
@@ -103,35 +73,74 @@ export default function Board({
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-2">
-        <div 
-          ref={boardRef}
-          className="space-y-2 mt-2 min-h-[200px] max-h-[calc(100vh-300px)] overflow-y-auto"
-        >
-          {tasks.map((task, index) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              index={index}
-              boardId={id}
-              onClick={() => onTaskClick(task)}
-              onMoveTask={onMoveTask}
-            />
-          ))}
-          {tasks.length === 0 && (
-            <div className="flex items-center justify-center h-20 text-sm text-muted-foreground">
-              Drop tasks here
-            </div>
-          )}
-        </div>
-      </CardContent>
+      </div>
+
+      {/* Board Content */}
+      <Droppable droppableId={board.id}>
+        {(provided, snapshot) => (
+          <div 
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={`p-3 space-y-2 min-h-[200px] max-h-[calc(100vh-300px)] overflow-y-auto flex-1 ${
+              snapshot.isDraggingOver ? 'bg-muted/20' : ''
+            }`}
+          >
+            {board.tasks.map((task, index) => (
+              <Draggable 
+                key={task.id} 
+                draggableId={task.id} 
+                index={index}
+              >
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    onClick={() => onTaskClick(task)}
+                    className={`p-3 bg-card rounded-lg border shadow-sm transition-all duration-200
+                      ${snapshot.isDragging ? "opacity-70 shadow-md" : ""}
+                      ${!snapshot.isDragging && "hover:shadow-md hover:translate-y-[-2px]"}
+                    `}
+                    style={{
+                      ...provided.draggableProps.style,
+                      cursor: "grab"
+                    }}
+                  >
+                    <div className="font-medium mb-1 break-words">{task.title}</div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span className="truncate max-w-[120px]">{task.assignee}</span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          task.priority === "High"
+                            ? "bg-red-100 text-red-800 border-red-200"
+                            : task.priority === "Medium"
+                            ? "bg-amber-100 text-amber-800 border-amber-200"
+                            : "bg-green-100 text-green-800 border-green-200"
+                        }
+                      >
+                        {task.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+            {board.tasks.length === 0 && (
+              <div className="flex items-center justify-center h-20 text-sm text-muted-foreground">
+                Drop tasks here
+              </div>
+            )}
+          </div>
+        )}
+      </Droppable>
 
       <CreateTaskModal
         isOpen={isCreateTaskModalOpen}
         onClose={() => setIsCreateTaskModalOpen(false)}
         onSubmit={(task) => {
-          onAddTask(id, task);
+          onAddTask(board.id, task);
           setIsCreateTaskModalOpen(false);
         }}
       />
@@ -149,7 +158,7 @@ export default function Board({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                onDeleteBoard(id);
+                onDeleteBoard(board.id);
                 setIsDeleteDialogOpen(false);
               }}
               className="bg-red-500 hover:bg-red-600"
@@ -159,6 +168,6 @@ export default function Board({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 } 

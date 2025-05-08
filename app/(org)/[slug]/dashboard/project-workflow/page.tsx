@@ -1,116 +1,112 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import Board, { Task } from "./_components/Board";
+import { useState, useEffect } from "react";
+import { initialBoards, BoardData } from "./MockData";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import Board from "./_components/Board";
+import { Task } from "./_components/Board";
 import CreateBoardModal from "./_components/CreateBoardModal";
 import TaskDetailsModal from "./_components/TaskDetailsModal";
-import { useState, useRef, useEffect } from "react";
-import { initialBoards, BoardData } from "./MockData";
-
-// Custom HTML5Backend with auto-scrolling
-const customBackend = HTML5Backend;
 
 export default function ProjectWorkflowPage() {
   const [boards, setBoards] = useState<BoardData[]>(initialBoards);
   const [isCreateBoardModalOpen, setIsCreateBoardModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [windowWidth, setWindowWidth] = useState<number>(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
 
-  // Add auto-scrolling effect
+  // Handle window resize for responsiveness
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    // Function to handle mouse movement for auto-scrolling
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX } = e;
-      const rect = container.getBoundingClientRect();
-      const scrollThreshold = 100; // pixels from edge
-      const scrollSpeed = 15;
-
-      // Calculate distance from edges
-      const distanceFromLeft = clientX - rect.left;
-      const distanceFromRight = rect.right - clientX;
-      
-      // Auto-scroll when near the edges during drag operations
-      if (e.buttons === 1) { // Check if mouse button is pressed (dragging)
-        // Scroll left if near left edge
-        if (distanceFromLeft < scrollThreshold) {
-          container.scrollLeft -= scrollSpeed;
-        }
-        // Scroll right if near right edge
-        else if (distanceFromRight < scrollThreshold) {
-          container.scrollLeft += scrollSpeed;
-        }
-      }
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
     };
 
-    // Function for touch-based scrolling
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length !== 1) return;
-      
-      const touch = e.touches[0];
-      const { clientX } = touch;
-      const rect = container.getBoundingClientRect();
-      const scrollThreshold = 80;
-      const scrollSpeed = 10;
+    if (typeof window !== "undefined") {
+      setWindowWidth(window.innerWidth);
+      window.addEventListener("resize", handleResize);
+    }
 
-      // Calculate distance from edges
-      const distanceFromLeft = clientX - rect.left;
-      const distanceFromRight = rect.right - clientX;
-      
-      // Auto-scroll when near the edges during touch drag
-      if (distanceFromLeft < scrollThreshold) {
-        container.scrollLeft -= scrollSpeed;
-      } else if (distanceFromRight < scrollThreshold) {
-        container.scrollLeft += scrollSpeed;
-      }
-    };
-
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('touchmove', handleTouchMove);
-    
     return () => {
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('touchmove', handleTouchMove);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", handleResize);
+      }
     };
   }, []);
 
-  const moveTask = (taskId: string, sourceId: string, destinationId: string, index: number) => {
-    // Find the source board
-    const sourceBoard = boards.find((board) => board.id === sourceId);
-    if (!sourceBoard) return;
+  // Handle drag end event from react-beautiful-dnd
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
 
-    // Find the task in the source board
-    const taskIndex = sourceBoard.tasks.findIndex((task) => task.id === taskId);
-    if (taskIndex === -1) return;
+    // Dropped outside the list
+    if (!destination) {
+      return;
+    }
 
-    // Get the task
-    const task = sourceBoard.tasks[taskIndex];
+    // Dropped in the same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
 
-    // Create new board states
-    const newBoards = boards.map((board) => {
-      // Remove from source board
-      if (board.id === sourceId) {
-        const newTasks = [...board.tasks];
-        newTasks.splice(taskIndex, 1);
-        return { ...board, tasks: newTasks };
-      }
-      
-      // Add to destination board
-      if (board.id === destinationId) {
-        const newTasks = [...board.tasks];
-        newTasks.splice(index, 0, task);
-        return { ...board, tasks: newTasks };
-      }
-      
-      return board;
-    });
+    // Find source and destination boards
+    const sourceBoard = boards.find((board) => board.id === source.droppableId);
+    const destBoard = boards.find((board) => board.id === destination.droppableId);
+
+    if (!sourceBoard || !destBoard) {
+      return;
+    }
+
+    // Create a copy of our source tasks
+    const sourceTasksCopy = [...sourceBoard.tasks];
     
-    setBoards(newBoards);
+    // Remove the task from the source
+    const [movedTask] = sourceTasksCopy.splice(source.index, 1);
+
+    // Moving to a different board
+    if (source.droppableId !== destination.droppableId) {
+      // Update the task with the new status
+      const updatedTask = {
+        ...movedTask,
+        status: destBoard.title,
+      };
+
+      // Create a copy of our destination tasks
+      const destTasksCopy = [...destBoard.tasks];
+      
+      // Insert the task in the destination
+      destTasksCopy.splice(destination.index, 0, updatedTask);
+
+      // Update the boards with the new tasks arrays
+      const newBoards = boards.map((board) => {
+        if (board.id === source.droppableId) {
+          return { ...board, tasks: sourceTasksCopy };
+        }
+        if (board.id === destination.droppableId) {
+          return { ...board, tasks: destTasksCopy };
+        }
+        return board;
+      });
+
+      setBoards(newBoards);
+    } else {
+      // Moving within the same board
+      // Insert the task at the destination
+      sourceTasksCopy.splice(destination.index, 0, movedTask);
+
+      // Update the board with the new tasks array
+      const newBoards = boards.map((board) => {
+        if (board.id === source.droppableId) {
+          return { ...board, tasks: sourceTasksCopy };
+        }
+        return board;
+      });
+
+      setBoards(newBoards);
+    }
   };
 
   const handleCreateBoard = (title: string) => {
@@ -146,6 +142,19 @@ export default function ProjectWorkflowPage() {
     setBoards(newBoards);
   };
 
+  // Get board width based on screen size
+  const getBoardWidth = () => {
+    if (windowWidth < 640) {
+      return "100%"; // Full width on mobile
+    } else if (windowWidth < 768) {
+      return "250px";
+    } else if (windowWidth < 1024) {
+      return "280px";
+    } else {
+      return "300px";
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
@@ -159,32 +168,28 @@ export default function ProjectWorkflowPage() {
         </Button>
       </div>
 
-      <Card className="w-full flex flex-col flex-1 overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle>Project Boards</CardTitle>
-        </CardHeader>
+      <div className="w-full flex flex-col flex-1 overflow-hidden bg-background border rounded-lg">
+        <div className="p-4 border-b sticky top-0 bg-background z-10">
+          <h2 className="text-xl font-semibold">Project Boards</h2>
+        </div>
 
-        <CardContent className="p-0 overflow-hidden flex-1">
-          <DndProvider backend={HTML5Backend}>
-            <div className="h-full overflow-x-auto" ref={scrollContainerRef}>
-              <div className="flex gap-4 min-w-fit p-4 pb-8">
-                {boards.map((board) => (
-                  <Board
-                    key={board.id}
-                    id={board.id}
-                    title={board.title}
-                    tasks={board.tasks}
-                    onTaskClick={setSelectedTask}
-                    onAddTask={handleAddTask}
-                    onDeleteBoard={handleDeleteBoard}
-                    onMoveTask={moveTask}
-                  />
-                ))}
-              </div>
+        <div className="overflow-x-auto flex-1">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex gap-4 p-4 pb-8 min-w-fit">
+              {boards.map((board) => (
+                <Board
+                  key={board.id}
+                  board={board}
+                  onTaskClick={setSelectedTask}
+                  onAddTask={handleAddTask}
+                  onDeleteBoard={handleDeleteBoard}
+                  width={getBoardWidth()}
+                />
+              ))}
             </div>
-          </DndProvider>
-        </CardContent>
-      </Card>
+          </DragDropContext>
+        </div>
+      </div>
 
       <CreateBoardModal
         isOpen={isCreateBoardModalOpen}
