@@ -142,7 +142,7 @@ export default function ProjectWorkflowPage() {
     setBoards(newBoards);
   };
 
-  // Get board width based on screen size
+
   const getBoardWidth = () => {
     if (windowWidth < 640) {
       return "100%"; // Full width on mobile
