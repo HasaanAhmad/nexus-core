@@ -85,7 +85,7 @@ const data = {
     },
     {
       title: 'Project Workflow',
-      url: '/dashboard/project-workflow',
+      url: '/dashboard/projects',
       icon: BarChart3
     },
     {

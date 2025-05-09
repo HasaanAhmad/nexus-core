@@ -45,15 +45,37 @@ export default function Board({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const tasksContainerRef = useRef<HTMLDivElement>(null);
 
+  // Get border and indicator color based on board color
+  const getBoardColorStyles = () => {
+    if (!board.color) return {};
+    
+    // Create a light version of the color for the background
+    const backgroundColor = `${board.color}10`; // Add 10% opacity
+    
+    return {
+      borderColor: board.color,
+      borderTopWidth: '3px',
+      backgroundColor
+    };
+  };
+
   return (
     <div 
-      className="flex flex-col border rounded-lg bg-background"
-      style={{ width, flexShrink: 0 }}
+      className="flex flex-col border rounded-lg bg-background overflow-hidden"
+      style={{ width, flexShrink: 0, ...getBoardColorStyles() }}
     >
       {/* Board Header - Fixed and Responsive */}
       <div className="p-3 border-b sticky top-0 bg-background z-10">
         <div className="flex justify-between items-center">
-          <div className="font-medium truncate">{board.title}</div>
+          <div className="font-medium truncate flex items-center gap-2">
+            {board.color && (
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: board.color }}
+              />
+            )}
+            {board.title}
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{board.tasks.length}</Badge>
             <Button
@@ -122,6 +144,11 @@ export default function Board({
                         {task.priority}
                       </Badge>
                     </div>
+                    {task.dueDate && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Due: {task.dueDate}
+                      </div>
+                    )}
                   </div>
                 )}
               </Draggable>
@@ -143,15 +170,15 @@ export default function Board({
           onAddTask(board.id, task);
           setIsCreateTaskModalOpen(false);
         }}
+        boardId={board.id}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Board</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this board? This action cannot be undone.
-              All tasks in this board will be permanently deleted.
+              This will delete the board and all its tasks. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

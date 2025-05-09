@@ -91,12 +91,13 @@ model Role {
 }
 
 model Project {
-  id             Int          @id @default(autoincrement())
+  id             String          @id @default(uuid()) 
   name           String
-  assigneeId     String
-  assignee       User         @relation("ProjectAssignee", fields: [assigneeId], references: [id])
+  description    String?
+  assignees      User[]       @relation("ProjectAssignee")
   boards         Board[]
-  comments       Json?
+  status         ProjectStatus @default(PLANNING)
+  dueDate        DateTime? 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
@@ -104,26 +105,27 @@ model Project {
 }
 
 model Board {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(uuid())
   name        String
   description String?
   color       String?
   tasks       Task[]
-  projectId   Int
+  projectId   String
   project     Project  @relation(fields: [projectId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model Task {
-  id          Int      @id @default(autoincrement())
+  id          String      @id @default(uuid())
   name        String
   description String?
   dueDate     DateTime
   assigneeId  String
   assignee    User     @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  boardId     Int
+  boardId     String
   board       Board    @relation(fields: [boardId], references: [id])
+  priority    TaskPriority @default(MEDIUM)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -318,4 +320,16 @@ model FormInvitation {
 enum UserType {
   ADMIN
   EMPLOYEE
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  HIGH
+  MEDIUM
+  LOW
 }
